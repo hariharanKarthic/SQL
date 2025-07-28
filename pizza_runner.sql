@@ -1,18 +1,22 @@
 USE PIZZA_RUNNER;
 -- How many pizzas were ordered?
-SELECT COUNT(*) AS NO_OF_PIZZAS FROM (SELECT * FROM customer_orders
+SELECT COUNT(*) AS NO_OF_PIZZAS 
+ FROM (SELECT * FROM customer_orders
 GROUP BY order_id, customer_id, pizza_id, exclusions, extras, order_time)X;
 
 -- How many unique customer orders were made?
-SELECT COUNT(DISTINCT customer_id) AS UNIQUE_CUSTOMERS FROM customer_orders;
+SELECT COUNT(DISTINCT customer_id) AS UNIQUE_CUSTOMERS 
+FROM customer_orders;
 
 -- How many successful orders were delivered by each runner?
-SELECT RUNNER_ID, COUNT(DISTINCT ORDER_ID) AS ORDERS_DELIVERED FROM RUNNER_ORDERS
+SELECT RUNNER_ID, COUNT(DISTINCT ORDER_ID) AS ORDERS_DELIVERED 
+FROM RUNNER_ORDERS
 WHERE CANCELLATION IS NULL
 GROUP BY RUNNER_ID;
 
 -- How many of each type of pizza was delivered?
-SELECT p1.pizza_name, count(c.order_id) FROM customer_orders C  join runner_orders r on c.order_id=r.order_id
+SELECT p1.pizza_name, count(c.order_id)
+FROM customer_orders C  join runner_orders r on c.order_id=r.order_id
 join pizza_names p1 on c.pizza_id=p1.pizza_id
 where cancellation is null
 GROUP BY p1.pizza_name;
@@ -24,10 +28,12 @@ from customer_orders
 group by customer_id;
 
 -- What was the maximum number of pizzas delivered in a single order?
-select order_id, count(order_id) from customer_orders
+select order_id, count(order_id) 
+from customer_orders
 group by order_id
 order by count(order_id) desc
 limit 1;
+
 -- For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
 select customer_id,sum(case when exclusions is null and extras is null then 1 else 0 end ) as pizzas_delivered_without_change,
 sum(case when exclusions is not null or extras is not null then 1 else 0 end ) as pizzas_delivered_with_change
@@ -42,7 +48,8 @@ where order_id in (select order_id from runner_orders where cancellation is null
 
 
 -- What was the total volume of pizzas ordered for each hour of the day?
-select hour(order_time),count(pizza_id) from customer_orders
+select hour(order_time),count(pizza_id) 
+from customer_orders
 group by hour(order_time)
 order by hour(order_time);
 
@@ -69,11 +76,11 @@ select * from runner_orders;
 select weekofyear(registration_date), count(distinct runner_id) from runners
 group by weekofyear(registration_date);
 
-select * from runner_orders;
 -- What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pickup the order?
 select runner_id,time_format(avg(timediff(pickup_time,order_time)),"%i") as Avg_time_to_pickup
 from customer_orders c join runner_orders r on c.order_id=r.order_id
 group by 1;
+
 -- Is there any relationship between the number of pizzas and how long the order takes to prepare?
 with cte as(
 select c.order_id, count(c.order_id) as PizzaCount, round((timestampdiff(minute, order_time, pickup_time))) as Avgtime
@@ -82,14 +89,17 @@ inner join runner_orders as r
 on c.order_id = r.order_id
 where distance is not null 
 group by c.order_id)
-select PizzaCount, Avgtime
+
+ select PizzaCount, Avgtime
 from cte
 group by PizzaCount;
+
 -- What was the average distance travelled for each customer?
 select customer_id, round(avg(distance),2)as avg_distance 
 from customer_orders c join runner_orders r 
 on c.order_id=r.order_id
 group by 1;
+
 -- What was the difference between the longest and shortest delivery times for all orders?
 with cte as(
 select c.order_id, order_time, pickup_time, timestampdiff(minute, order_time,pickup_time) as TimeDiff1
@@ -98,13 +108,16 @@ inner join runner_orders as r
 on c.order_id = r.order_id
 where distance is not null
 group by c.order_id, order_time, pickup_time)
-select max(TimeDiff1) - min(TimeDiff1) as DifferenceTime from cte;
+
+ select max(TimeDiff1) - min(TimeDiff1) as DifferenceTime from cte;
+
 -- What was the average speed for each runner for each delivery and do you notice any trend for these values?
 with cte as (
 select runner_id, order_id, round(distance *60/duration,1) as speedKMH
 from runner_orders
 where distance is not null)
-select * from cte
+
+ select * from cte
 order by runner_id;
 
 -- What is the successful delivery percentage for each runner?
@@ -113,52 +126,18 @@ group by runner_id),
 cte1 as (select runner_id, count(order_id) as delivered_orders from runner_orders 
 where cancellation is null
 group by runner_id)
-select c.runner_id,total_orders,delivered_orders,round(((delivered_orders/total_orders)*100),2) as successful_delivery_percentage
+
+ select c.runner_id,total_orders,delivered_orders,round(((delivered_orders/total_orders)*100),2) as successful_delivery_percentage
 from cte c join cte1 c1 on c.runner_id=c1.runner_id;
 
 -- What are the standard ingredients for each pizza?
-drop table if exists pizza_recipes1;
-create table pizza_recipes1 
-(
- pizza_id int,
-    toppings int);
-insert into pizza_recipes1
-(pizza_id, toppings) 
-values
-(1,1),
-(1,2),
-(1,3),
-(1,4),
-(1,5),
-(1,6),
-(1,8),
-(1,10),
-(2,4),
-(2,6),
-(2,7),
-(2,9),
-(2,11),
-(2,12);
-SELECT pizza_name, group_concat(topping_name) FROM PIZZA_RECIPES1 PR 
-JOIN PIZZA_TOPPINGS PT ON PR.TOPPINGS=PT.TOPPING_ID 
-JOIN PIZZA_NAMES PN ON PR.PIZZA_ID=PN.PIZZA_ID
-group by pizza_name;
 
 SELECT pizza_name, group_concat(topping_name) FROM PIZZA_RECIPES1 PR 
 JOIN PIZZA_TOPPINGS PT ON PR.TOPPINGS=PT.TOPPING_ID 
 JOIN PIZZA_NAMES PN ON PR.PIZZA_ID=PN.PIZZA_ID
 group by pizza_name;
 
-
-SELECT * FROM PIZZA_RECIPES1;
-SELECT * FROM PIZZA_TOPPINGS;
 -- What was the most commonly added extra?
-select * from customer_orders;
-CREATE TABLE numbers (
-  num INT PRIMARY KEY
-);
-INSERT INTO numbers VALUES
-( 1 ), ( 2 ), ( 3 ), ( 4 ), ( 5 ), ( 6 ), ( 7 ), ( 8 ), ( 9 ), ( 10 ),( 11 ), ( 12 ), ( 13 ), ( 14 );
 with cte as (SELECT n.num, SUBSTRING_INDEX(SUBSTRING_INDEX(all_tags, ',', num), ',', -1) as one_tag
 FROM (
   SELECT
@@ -168,12 +147,15 @@ FROM (
 ) t
 JOIN numbers n
 ON n.num <= t.count_tags)
+
 select one_tag as Extras,pizza_toppings.topping_name as ExtraTopping, count(one_tag) as Occurrencecount
 from cte
 inner join pizza_toppings
 on pizza_toppings.topping_id = cte.one_tag
 where one_tag != 0
 group by one_tag,pizza_toppings.topping_name;
+
+
 -- What was the most common exclusion?
 with cte as (SELECT n.num, SUBSTRING_INDEX(SUBSTRING_INDEX(all_tags, ',', num), ',', -1) as one_tag
 FROM (
@@ -184,13 +166,15 @@ FROM (
 ) t
 JOIN numbers n
 ON n.num <= t.count_tags)
-select one_tag as Exclusions,pizza_toppings.topping_name as ExclusionTopping, count(one_tag) as Occurrencecount
+
+ select one_tag as Exclusions,pizza_toppings.topping_name as ExclusionTopping, count(one_tag) as Occurrencecount
 from cte
 inner join pizza_toppings
 on pizza_toppings.topping_id = cte.one_tag
 where one_tag != 0
 group by one_tag,pizza_toppings.topping_name 
 order by Occurrencecount desc;
+
 -- Generate an order item for each record in the customers_orders table in the format of one of the following:
 select customer_orders.order_id, customer_orders.pizza_id, pizza_names.pizza_name, customer_orders.exclusions, customer_orders.extras, 
 case
